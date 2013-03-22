@@ -1,6 +1,7 @@
 // Copyright (c) 2013 Turbulenz Limited
+// See LICENSE for full license text.
 
-#include "payment.h"
+#include "googleplaybilling.h"
 
 #include <android/log.h>
 

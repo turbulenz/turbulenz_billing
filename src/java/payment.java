@@ -1,4 +1,5 @@
 // Copyright (c) 2013 Turbulenz Limited
+// See LICENSE for full license text.
 
 package com.turbulenz.turbulenz;
 

@@ -1,4 +1,5 @@
 // Copyright (c) 2013 Turbulenz Limited
+// See LICENSE for full license text.
 
 #ifndef __TURBULENZ_ANDROID_PAYMENT_H__
 #define __TURBULENZ_ANDROID_PAYMENT_H__
