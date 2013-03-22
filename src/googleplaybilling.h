@@ -14,6 +14,14 @@ namespace turbulenz
 class GooglePlayBilling
 {
 public:
+    struct Product
+    {
+        std::string   sku;
+        std::string   title;
+        std::string   description;
+        std::string   price;
+    };
+
     struct Purchase
     {
         std::string   sku;
@@ -26,6 +34,9 @@ public:
     typedef std::vector<Purchase> PurchaseList;
 
     typedef void (*ReadyStatusCB)(void *ctx, bool ready);
+
+    typedef void (*ProductQueryCB)(void *ctx, const char *sku,
+                                   const Product &product);
 
     typedef void (*PurchaseQueryCB)(void *ctx, const PurchaseList &purchases);
 
@@ -42,6 +53,8 @@ public:
     bool SetReadyStatusCallback(void *ctx, ReadyStatusCB callback);
 
     bool QueryPurchases(void *ctx, PurchaseQueryCB callback);
+
+    bool QueryProduct(void *ctx, const char *sku, ProductQueryCB callback);
 
     bool ConfirmPurchase(void *ctx, const char *sku, const char *clientToken,
                          PurchaseSuccessCB success, PurchaseFailureCB failure);
