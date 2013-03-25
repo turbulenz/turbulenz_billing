@@ -601,6 +601,113 @@ public class payment
     }
 
     // ------------------------------------------------------------------
+    // doQueryProduct
+    // ------------------------------------------------------------------
+
+    static void sendProductInfoError(final CallbackHandler handler,
+                                     final long context, final String sku)
+    {
+        sendProductInfo(handler, context, sku, null, null, null);
+    }
+
+    static void sendProductInfo(final CallbackHandler handler,
+                                final long context, final String sku,
+                                final String title, final String description,
+                                final String price)
+    {
+        handler.post(new Runnable() {
+                @Override public void run() {
+                    nativeProductQueryResponse(context, sku, title,
+                                               description, price);
+                }
+            });
+    }
+
+    static void threadQueryProduct(final CallbackHandler handler,
+                                   final String sku, final long context)
+    {
+        ArrayList skuList = new ArrayList();
+        skuList.add(sku);
+        Bundle productQueryBundle = new Bundle();
+        productQueryBundle.putStringArrayList("ITEM_ID_LIST", skuList);
+
+        Bundle skuDetails;
+        try {
+            skuDetails = mService.getSkuDetails
+                (3, mActivity.getPackageName(), ITEM_TYPE_INAPP,
+                 productQueryBundle);
+        } catch (RemoteException e) {
+            _log("threadQueryProduct: remote exception: " + e);
+            e.printStackTrace();
+            sendProductInfoError(handler, context, sku);
+            return;
+        }
+
+        int response = getResponseCodeFromBundle(skuDetails);
+        if (BILLING_RESPONSE_RESULT_OK != response) {
+            _log("threadQueryProduct: bad response from getSkuDetails: " +
+                 response);
+            sendProductInfoError(handler, context, sku);
+            return;
+        }
+
+        if (!skuDetails.containsKey(RESPONSE_GET_SKU_DETAILS_LIST)) {
+            _log("threadQueryProduct: bundle doens't contain list");
+            sendProductInfoError(handler, context, sku);
+            return;
+        }
+
+        ArrayList<String> responseList =
+            skuDetails.getStringArrayList(RESPONSE_GET_SKU_DETAILS_LIST);
+
+        if (1 != responseList.size()) {
+            _log("threadQueryProduct: repsonse list has unexpected length: " +
+                 responseList.size());
+            sendProductInfoError(handler, context, sku);
+            return;
+        }
+
+        String responseString = responseList.get(0);
+        try {
+            JSONObject o = new JSONObject(responseString);
+            final String _sku = o.getString("productId");
+            final String title = o.getString("title");
+            final String description = o.getString("description");
+
+            // TODO: something with price
+            final String price = o.getString("price");
+
+            // TOOD: check _sku == sku
+
+            sendProductInfo(handler, context, sku, title, description, price);
+        } catch(JSONException e) {
+            _log("threadQueryProduct: failed parsing JSON");
+            sendProductInfoError(handler, context, sku);
+        }
+    }
+
+    public static boolean doQueryProduct(final String sku, final long context)
+    {
+        if (!mReady) {
+            _log("doQueryProduct: no ready");
+            return false;
+        }
+
+        _log("doQueryProduct: " + sku);
+
+        final CallbackHandler handler = getCallbackHandler();
+
+        (new Thread(new Runnable() {
+                public void run() {
+                    threadQueryProduct(handler, sku, context);
+                }
+            })).start();
+
+        _log("doQueryProduct: launched thread");
+        return true;
+    }
+
+    // ------------------------------------------------------------------
     // doCheckInitialized
     // ------------------------------------------------------------------
 
@@ -715,6 +822,10 @@ public class payment
 
     static native void nativeOnPurchaseFailed
         (long context, String msg);
+
+    static native void nativeProductQueryResponse
+        (long context, String sku, String title, String description,
+         String price);
 
     // sku == "", details == null, signature == null means end of purchases
     // sku == null, details != null means error (msg in 'details')

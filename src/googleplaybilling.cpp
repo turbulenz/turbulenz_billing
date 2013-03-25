@@ -135,6 +135,50 @@ Java_com_turbulenz_turbulenz_payment_nativePurchaseQueryResponse
     }
 }
 
+struct ProductQueryContext
+{
+    void                              *callerContext;
+    GooglePlayBilling::ProductQueryCB  callback;
+};
+
+extern "C" void
+Java_com_turbulenz_turbulenz_payment_nativeProductQueryResponse
+(JNIEnv *env, jobject thiz, jlong context, jstring sku, jstring title,
+ jstring description, jstring price)
+{
+    if (0 == context)
+    {
+        LOGE("product query callback called with null context");
+        return;
+    }
+
+    ProductQueryContext *ctx = (ProductQueryContext *)(size_t )context;
+
+    // sku should never be null.  If title is null, there is no such
+    // product.
+
+    if (0 == sku)
+    {
+        LOGE("product query has null SKU");
+        delete ctx;
+        return;
+    }
+
+    GooglePlayBilling::Product product;
+    InitStringFromJString(product.sku, env, sku);
+
+    if (0 != title)
+    {
+        InitStringFromJString(product.title, env, title);
+        InitStringFromJString(product.description, env, description);
+        InitStringFromJString(product.price, env, price);
+    }
+
+    ctx->callback(ctx->callerContext, product);
+
+    delete ctx;
+}
+
 extern "C" void
 Java_com_turbulenz_turbulenz_payment_nativeOnReadyStatus
 (JNIEnv *env, jobject thiz, jlong context, jboolean ready)
@@ -203,12 +247,15 @@ GooglePlayBilling::GooglePlayBilling(JNIEnv *jniEnv, jclass paymentClass) :
                  "(Ljava/lang/String;Ljava/lang/String;J)Z");
             mDoQueryPurchasesMethod = jniEnv->GetStaticMethodID
                 (mPaymentClass, "doQueryPurchases", "(J)Z");
+            mDoQueryProductMethod = jniEnv->GetStaticMethodID
+                (mPaymentClass, "doQueryProduct", "(Ljava/lang/String;J)Z");
             mDoConsumeMethod = jniEnv->GetStaticMethodID
                 (mPaymentClass, "doConsume", "(Ljava/lang/String;)Z");
 
-            if (0 == mDoCheckReadyMethod ||
+            if (0 == mDoCheckReadyMethod     ||
                 0 == mDoQueryPurchasesMethod ||
-                0 == mDoPurchaseMethod ||
+                0 == mDoQueryProductMethod   ||
+                0 == mDoPurchaseMethod       ||
                 0 == mDoConsumeMethod)
             {
                 LOGE("Cannot find all methods on Java class");
@@ -301,6 +348,31 @@ GooglePlayBilling::QueryPurchases(void *ctx,
     if (!CallJavaMethod(mDoQueryPurchasesMethod, (jlong )(size_t )queryCtx))
     {
         delete queryCtx;
+        return false;
+    }
+
+    return true;
+}
+
+bool
+GooglePlayBilling::QueryProduct(void *ctx, const char *sku,
+                                GooglePlayBilling::ProductQueryCB callback)
+{
+    if (0 == mJNIEnv)
+    {
+        LOGE("call to QueryProduct before initialization");
+        return false;
+    }
+
+    ProductQueryContext *productQueryCtx = new ProductQueryContext;
+    productQueryCtx->callerContext = ctx;
+    productQueryCtx->callback = callback;
+
+    jstring jSKU = mJNIEnv->NewStringUTF(sku);
+    const jlong jCtx = (jlong )productQueryCtx;
+    if (!CallJavaMethod(mDoQueryProductMethod, jSKU, jCtx))
+    {
+        delete productQueryCtx;
         return false;
     }
 

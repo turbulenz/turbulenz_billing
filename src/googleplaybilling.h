@@ -35,8 +35,7 @@ public:
 
     typedef void (*ReadyStatusCB)(void *ctx, bool ready);
 
-    typedef void (*ProductQueryCB)(void *ctx, const char *sku,
-                                   const Product &product);
+    typedef void (*ProductQueryCB)(void *ctx, const Product &product);
 
     typedef void (*PurchaseQueryCB)(void *ctx, const PurchaseList &purchases);
 
@@ -73,6 +72,7 @@ protected:
     jmethodID      mDoCheckReadyMethod;
     jmethodID      mDoPurchaseMethod;
     jmethodID      mDoQueryPurchasesMethod;
+    jmethodID      mDoQueryProductMethod;
     jmethodID      mDoConsumeMethod;
 
 };
