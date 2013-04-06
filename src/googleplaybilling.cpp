@@ -290,7 +290,7 @@ GooglePlayBilling::~GooglePlayBilling()
         {
             // Disable onready callbacks
 
-            CallJavaMethod(mDoCheckReadyMethod, (long )0);
+            CallJavaMethod(mDoCheckReadyMethod, (jlong )0);
 
             mJNIEnv->DeleteGlobalRef(mPaymentClass);
             mPaymentClass = 0;
@@ -432,7 +432,7 @@ GooglePlayBilling::SetReadyStatusCallback(void *ctx, ReadyStatusCB callback)
     mReadyStatusContext = ctx;
     mReadyStatusCallback = callback;
 
-    jlong jCtx = (long )(size_t )this;
+    jlong jCtx = (jlong )(size_t )this;
     if (0 == callback)
     {
         jCtx = 0;

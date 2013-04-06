@@ -28,7 +28,7 @@ public class payment
 {
     public static abstract class CallbackHandler
     {
-        abstract void post(Runnable r);
+        abstract public void post(Runnable r);
     };
 
     // ------------------------------------------------------------------
@@ -162,7 +162,7 @@ public class payment
         if (null == mCallbackHandler) {
             mCallbackHandler = new CallbackHandler() {
                     Handler h = new Handler();
-                    @Override void post(Runnable r) {
+                    @Override public void post(Runnable r) {
                         h.post(r);
                     }
                 };

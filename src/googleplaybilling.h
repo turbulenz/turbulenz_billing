@@ -37,6 +37,8 @@ public:
 
     typedef void (*ProductQueryCB)(void *ctx, const Product &product);
 
+    /// sku == "", details == null, signature == null means end of purchases
+    /// sku == null, details != null means error (msg in 'details')
     typedef void (*PurchaseQueryCB)(void *ctx, const PurchaseList &purchases);
 
     typedef void (*PurchaseSuccessCB)(void *ctx, const Purchase &purchase);
