@@ -43,6 +43,8 @@ public:
 
     typedef void (*PurchaseSuccessCB)(void *ctx, const Purchase &purchase);
 
+    /// message == null means the user cancelled the purchase,
+    /// otherwise message contains the error message.
     typedef void (*PurchaseFailureCB)(void *ctx, const char *message);
 
     GooglePlayBilling(JNIEnv *jniEnv, jclass paymentClass = 0);

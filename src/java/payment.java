@@ -321,7 +321,7 @@ public class payment
 
         if (Activity.RESULT_CANCELED == resultCode)  {
             _log("onActivityResult: cancelled");
-            sendPurchaseFailure("Cancelled by user");
+            sendPurchaseFailure(null);
             return true;
         }
 

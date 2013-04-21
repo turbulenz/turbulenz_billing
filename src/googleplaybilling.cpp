@@ -65,10 +65,16 @@ Java_com_turbulenz_turbulenz_payment_nativeOnPurchaseFailed
 
     PurchaseContext *purchaseCtx = (PurchaseContext *)(size_t )context;
 
-    std::string msgStr;
-    InitStringFromJString(msgStr, env, msg);
+    const char *msgChars = 0;
 
-    purchaseCtx->failureCallback(purchaseCtx->callerContext, msgStr.c_str());
+    std::string msgStr;
+    if (0 != msg)
+    {
+        InitStringFromJString(msgStr, env, msg);
+        msgChars = msgStr.c_str();
+    }
+
+    purchaseCtx->failureCallback(purchaseCtx->callerContext, msgChars);
 
     delete purchaseCtx;
 }
