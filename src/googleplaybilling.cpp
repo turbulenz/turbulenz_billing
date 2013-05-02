@@ -7,8 +7,11 @@
 
 using namespace turbulenz;
 
-#define LOGI(...) \
+#define LOGI(...)
+#ifndef LOGI
+# define LOGI(...) \
     ((void)__android_log_print(ANDROID_LOG_INFO, "nativebilling", __VA_ARGS__))
+#endif
 
 #define LOGE(...) \
     ((void)__android_log_print(ANDROID_LOG_ERROR, "nativebilling", __VA_ARGS__))

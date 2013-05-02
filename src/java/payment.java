@@ -26,6 +26,20 @@ import com.android.vending.billing.IInAppBillingService;
 
 public class payment
 {
+    // Logging
+    static private void _log(String msg)
+    {
+        // Log.i("turbulenz-payment: ", msg);
+    }
+    static private void _print(String msg)
+    {
+        Log.i("turbulenz-payment: ", msg);
+    }
+    static private void _error(String msg)
+    {
+        Log.e("turbulenz-payment: ", msg);
+    }
+
     public static abstract class CallbackHandler
     {
         abstract public void post(Runnable r);
@@ -84,18 +98,6 @@ public class payment
     static CallbackHandler      mPurchaseHandler = null;
     static long                 mPurchaseContext = 0;
 
-    //
-    static private void _log(String msg)
-    {
-        Log.i("turbulenz-payment: ", msg);
-    }
-
-    //
-    static private void _error(String msg)
-    {
-        Log.e("turbulenz-payment: ", msg);
-    }
-
     public static boolean initialize(Activity activity, int purchaseRequestCode)
     {
         mActivity = activity;
@@ -130,7 +132,7 @@ public class payment
                             _log("billing v3 not supported for this package");
                         }
                     } catch (RemoteException e) {
-                        _log("remoteexception:");
+                        _error("remoteexception:");
                         e.printStackTrace();
                     }
 
@@ -205,8 +207,8 @@ public class payment
             return (int)((Long)o).longValue();
         }
         else {
-            _log("!! Unexpected type for bundle response code." +
-                 o.getClass().getName());
+            _error("!! Unexpected type for bundle response code." +
+                   o.getClass().getName());
 
             throw new RuntimeException("Unexpected type for bundle response code: "
                                        + o.getClass().getName());
@@ -245,7 +247,7 @@ public class payment
     static void sendPurchaseFailure(final String msg)
     {
         if (null == mPurchaseHandler) {
-            _log("sendPurchaseFailure: !! purchase handler no longer set");
+            _error("sendPurchaseFailure: !! purchase handler no longer set");
             return;
         }
 
@@ -269,7 +271,7 @@ public class payment
                                    final String signature)
     {
         if (null == mPurchaseHandler) {
-            _log("sendPurchaseResult: !! purchase handler no longer set");
+            _error("sendPurchaseResult: !! purchase handler no longer set");
             return;
         }
 
@@ -301,8 +303,8 @@ public class payment
     //
     protected static boolean verifyPurchase(String data, String sig)
     {
-        // TODO:
-        _log("verifyPurchase: !! NO CLIENT SIDE PURCHASE VERIFICATION !!");
+        // A VERY BIG TODO:
+        // _error("verifyPurchase: !! NO CLIENT SIDE PURCHASE VERIFICATION !!");
         return true;
     }
 
@@ -315,7 +317,7 @@ public class payment
              " resultCode: " + resultCode);
 
         if (mPurchaseRequestCode != requestCode) {
-            _log("onActivityResult: !! requestCode does not match");
+            _error("onActivityResult: !! requestCode does not match");
             return false;
         }
 
@@ -418,13 +420,13 @@ public class payment
                  Integer.valueOf(0)); // extraFlags
         }
         catch (SendIntentException e) {
-            _log("uiThreadDoPurchase: SendIntentException");
+            _error("uiThreadDoPurchase: SendIntentException");
             e.printStackTrace();
 
             sendPurchaseFailure("failed to send intent to Google Play");
         }
         catch (RemoteException e) {
-            _log("uiThreadDoPurchase: RemoteException");
+            _error("uiThreadDoPurchase: RemoteException");
             e.printStackTrace();
 
             sendPurchaseFailure("RemoteException");
@@ -435,13 +437,13 @@ public class payment
     public static boolean doPurchase(final String sku, final String devPayload,
                                      long context)
     {
-        _log("doPurchase: ");
+        _print("doPurchase: " + sku);
         if (!mReady) {
-            _log("doPurchase: not ready.  leaving.");
+            _error("doPurchase: not ready.  leaving.");
             return false;
         }
         if (null != mPurchaseHandler) {
-            _log("doPurchase: !! purchase handler already set (internal error)");
+            _error("doPurchase: !!purchase handler already set (internal err)");
             return false;
         }
 
@@ -509,7 +511,7 @@ public class payment
                     (3, mActivity.getPackageName(), ITEM_TYPE_INAPP,
                      continueToken);
             } catch (RemoteException e) {
-                _log("threadQueryPurchases: remote exception: " + e);
+                _error("threadQueryPurchases: remote exception: " + e);
                 e.printStackTrace();
                 sendPurchaseInfoError(handler, context, "failed to communicate "
                                       + "with Google Play");
@@ -519,7 +521,7 @@ public class payment
             int response = getResponseCodeFromBundle(ownedItems);
 
             if (BILLING_RESPONSE_RESULT_OK != response) {
-                _log("doQueryPurchases: !! error retrieving purchased SKUs");
+                _error("doQueryPurchases: !! error retrieving purchased SKUs");
                 // TODO: Should we grab something fom saved data here?
                 sendPurchaseInfoError(handler, context,
                                       "error retrieving purchase data");
@@ -530,7 +532,7 @@ public class payment
                 !ownedItems.containsKey(RESPONSE_INAPP_PURCHASE_DATA_LIST) ||
                 !ownedItems.containsKey(RESPONSE_INAPP_SIGNATURE_LIST)) {
 
-                _log("doQueryPurchases: !! missign fields in response");
+                _error("doQueryPurchases: !! missign fields in response");
                 sendPurchaseInfoError(handler, context,
                                       "response missign some fields");
                 return;
@@ -543,8 +545,9 @@ public class payment
             ArrayList<String> signatureData =
                 ownedItems.getStringArrayList(RESPONSE_INAPP_SIGNATURE_LIST);
 
-            _log("doQueryPurchases: listing purchased SKUs:");
-            for (int itemIdx = 0 ; itemIdx < purchaseData.size() ; ++itemIdx) {
+            final int numSKUs = purchaseData.size();
+            _print("doQueryPurchases: " + numSKUs + " SKUs:");
+            for (int itemIdx = 0 ; itemIdx < numSKUs ; ++itemIdx) {
 
                 final String sku = ownedSkus.get(itemIdx);
                 final String data = purchaseData.get(itemIdx);
@@ -557,13 +560,14 @@ public class payment
                         o.optString("token", o.optString("purchaseToken"));
                     final String devPayload = o.optString("developerPayload");
 
+                    _print(" - " + sku);
                     _log(" - " + sku + ": " + data + " (sig: " + sig + ")");
 
                     sendPurchaseInfo(handler, context, sku, data, googleToken,
                                      devPayload, sig);
 
                 } catch(JSONException e) {
-                    _log("threadQueryPurchases: bad JSON: " + data);
+                    _error("threadQueryPurchases: bad JSON: " + data);
                     sendPurchaseInfoError(handler, context,
                                           "error in purchase data");
                     return;
@@ -582,7 +586,7 @@ public class payment
     public static boolean doQueryPurchases(final long context)
     {
         if (!mReady) {
-            _log("doQueryPurchases: not ready.  leaving.");
+            _error("doQueryPurchases: not ready.  leaving.");
             return false;
         }
 
@@ -637,7 +641,7 @@ public class payment
                 (3, mActivity.getPackageName(), ITEM_TYPE_INAPP,
                  productQueryBundle);
         } catch (RemoteException e) {
-            _log("threadQueryProduct: remote exception: " + e);
+            _error("threadQueryProduct: remote exception: " + e);
             e.printStackTrace();
             sendProductInfoError(handler, context, sku);
             return;
@@ -681,7 +685,7 @@ public class payment
 
             sendProductInfo(handler, context, sku, title, description, price);
         } catch(JSONException e) {
-            _log("threadQueryProduct: failed parsing JSON");
+            _error("threadQueryProduct: failed parsing JSON");
             sendProductInfoError(handler, context, sku);
         }
     }
@@ -785,16 +789,16 @@ public class payment
     public static boolean doConsume(final String token)
     {
         if (!mReady) {
-            _log("doConsume: not ready.  leaving.");
+            _error("doConsume: !! not ready.  leaving.");
             return false;
         }
 
         if (null == token || token.equals("")) {
-            _log("doConsume: !! null or empty token");
+            _error("doConsume: !! null or empty token");
             return false;
         }
 
-        _log("doConsume: token: " + token);
+        _print("doConsume: token: " + token);
         try {
             int response =
                 mService.consumePurchase(3, mActivity.getPackageName(), token);
@@ -803,10 +807,10 @@ public class payment
                 _log("doConsume: successfully consumed");
                 return true;
             } else {
-                _log("doConsume: !! failed to consume.  response: " + response);
+                _error("doConsume: !! failed to consume.  response: " + response);
             }
         } catch (RemoteException e) {
-            _log("doConsume: exception " + e.toString());
+            _error("doConsume: !! exception " + e.toString());
         }
 
         return false;
