@@ -37,8 +37,9 @@ public:
 
     typedef void (*ProductQueryCB)(void *ctx, const Product &product);
 
-    /// sku == "", details == null, signature == null means end of purchases
-    /// sku == null, details != null means error (msg in 'details')
+    /// If 'purchases' is empty, no purchases have been made.  If
+    /// 'purchases' contains a single entry with sku == "", an error
+    /// occured and the correct list cannot be retrieved.
     typedef void (*PurchaseQueryCB)(void *ctx, const PurchaseList &purchases);
 
     typedef void (*PurchaseSuccessCB)(void *ctx, const Purchase &purchase);
@@ -55,6 +56,9 @@ public:
     // the current status.
     bool SetReadyStatusCallback(void *ctx, ReadyStatusCB callback);
 
+    /// If this call returns true, the callback will be called at some
+    /// point in the future.  An error may still occur, in which case
+    /// the callback is notified (see PurchaseQueryCB).
     bool QueryPurchases(void *ctx, PurchaseQueryCB callback);
 
     bool QueryProduct(void *ctx, const char *sku, ProductQueryCB callback);

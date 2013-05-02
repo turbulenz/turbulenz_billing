@@ -488,8 +488,8 @@ public class payment
             });
     }
 
-    static void sendPurchaseInfoError(CallbackHandler handler, final long context,
-                                      final String msg)
+    static void sendPurchaseInfoError(CallbackHandler handler,
+                                      final long context, final String msg)
     {
         handler.post(new Runnable() {
                 @Override public void run() {
@@ -534,7 +534,7 @@ public class payment
 
                 _error("doQueryPurchases: !! missign fields in response");
                 sendPurchaseInfoError(handler, context,
-                                      "response missign some fields");
+                                      "response missing some fields");
                 return;
             }
 

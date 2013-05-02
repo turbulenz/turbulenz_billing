@@ -103,19 +103,27 @@ Java_com_turbulenz_turbulenz_payment_nativePurchaseQueryResponse
     QueryContext *queryCtx = (QueryContext *)(size_t )context;
 
     // Conditions are:
-    // sku == "", details == null, signature == null means end of purchases
     // sku == null, details != null means error (msg in 'details')
+    // sku == "", details == null, signature == null means end of purchases
 
     if (0 == sku)
     {
-        std::string errStr;
-        InitStringFromJString(errStr, env, details);
-        LOGI("query failed: %s", errStr.c_str());
+        if (0 != details)
+        {
+            std::string errStr;
+            InitStringFromJString(errStr, env, details);
+            LOGE("query failed: %s", errStr.c_str());
+        }
+        else
+        {
+            LOGE("query failed: (internal error - no details available)");
+        }
 
-        // We must make the call here to give the caller a chance to
-        // clean up and stray data in the callback.  But there is
-        // nothing to indicate an error to the callback.
+        // Create a single empty entry to indicate an error.
 
+        GooglePlayBilling::PurchaseList &list = queryCtx->purchases;
+        list.clear();
+        list.push_back({ "", "", "", "", "" });
         queryCtx->callback(queryCtx->callerContext, queryCtx->purchases);
 
         delete queryCtx;
