@@ -24,7 +24,7 @@ import android.content.IntentSender.SendIntentException;
 
 import com.android.vending.billing.IInAppBillingService;
 
-public class googlepayment implements payment.BillingAgent
+public class googlepayment extends payment.BillingAgent
 {
     // Logging
     static private void _log(String msg)
@@ -73,19 +73,21 @@ public class googlepayment implements payment.BillingAgent
     //
     // ------------------------------------------------------------------
 
-    static Activity             mActivity = null;
+    Activity             mActivity = null;
+    int                  mPurchaseRequestCode;
 
-    static ServiceConnection    mServiceConnection = null;
-    static IInAppBillingService mService = null;
+    ServiceConnection    mServiceConnection = null;
+    IInAppBillingService mService = null;
 
-    static boolean              mReady = false;
+    boolean              mReady = false;
 
     // If not zero, indicates that a purchase is already in progress
-    static long                 mPurchaseContext = 0;
+    long                 mPurchaseContext = 0;
 
     public googlepayment(Activity activity, int purchaseRequestCode)
     {
         mActivity = activity;
+        mPurchaseRequestCode = purchaseRequestCode;
 
         // Just listens for connection / disconnection
         mServiceConnection = new ServiceConnection() {
@@ -130,8 +132,6 @@ public class googlepayment implements payment.BillingAgent
              ("com.android.vending.billing.InAppBillingService.BIND"),
              mServiceConnection, Context.BIND_AUTO_CREATE);
         _log("back from bindService: bound: " + Boolean.toString(bound));
-
-        return true;
     }
 
     //
@@ -300,7 +300,7 @@ public class googlepayment implements payment.BillingAgent
     }
 
     //
-    static void uiThreadDoPurchase(String sku, String extraData)
+    void uiThreadDoPurchase(String sku, String extraData)
     {
         _log("uiThreadDoPurchase: sku: " + sku);
 
@@ -312,7 +312,8 @@ public class googlepayment implements payment.BillingAgent
             if (response != BILLING_RESPONSE_RESULT_OK) {
                 _log("uiThreadDoPurchase: Failed to create intent bundle, " +
                      "response: " + response);
-                sendPurchaseFailure("failed to create Android buy Intent");
+                sendPurchaseFailure(mPurchaseContext,
+                                    "failed to create Android buy Intent");
                 return;
             }
 
@@ -332,27 +333,28 @@ public class googlepayment implements payment.BillingAgent
             _error("uiThreadDoPurchase: SendIntentException");
             e.printStackTrace();
 
-            sendPurchaseFailure("failed to send intent to Google Play");
+            sendPurchaseFailure(mPurchaseContext, "failed to send intent");
         }
         catch (RemoteException e) {
             _error("uiThreadDoPurchase: RemoteException");
             e.printStackTrace();
 
-            sendPurchaseFailure("RemoteException");
+            sendPurchaseFailure(mPurchaseContext, "RemoteException: " + e);
         }
     }
 
     //
-    public static boolean doPurchase(final String sku, final String devPayload,
-                                     long context)
+    public boolean doPurchase(final String sku, final String devPayload,
+                              long context)
     {
         _print("doPurchase: " + sku);
         if (!mReady) {
             _error("doPurchase: not ready.  leaving.");
             return false;
         }
-        if (null != mPurchaseHandler) {
-            _error("doPurchase: !!purchase handler already set (internal err)");
+
+        if (0 != mPurchaseContext) {
+            _error("doPurchase: !! purchase in progress (internal err)");
             return false;
         }
 
@@ -372,7 +374,7 @@ public class googlepayment implements payment.BillingAgent
     // doQueryPurchases
     // ------------------------------------------------------------------
 
-    static void threadQueryPurchases(final long context)
+    void threadQueryPurchases(final long context)
     {
         String continueToken = null;
         do {
@@ -431,7 +433,7 @@ public class googlepayment implements payment.BillingAgent
                     final String devPayload = o.optString("developerPayload");
 
                     _print(" - " + sku);
-                    _log(" - " + sku + ": " + data + " (sig: " + sig + ")");
+                    _log("   - (data:" + data + ", sig: " + sig + ")");
 
                     sendPurchaseInfo(context, sku, data, googleToken,
                                      devPayload, sig);
@@ -452,7 +454,7 @@ public class googlepayment implements payment.BillingAgent
     }
 
     // Call back to native code with the details of each purchase,
-    public static boolean doQueryPurchases(final long context)
+    public boolean doQueryPurchases(final long context)
     {
         if (!mReady) {
             _error("doQueryPurchases: not ready.  leaving.");
@@ -475,7 +477,7 @@ public class googlepayment implements payment.BillingAgent
     // doQueryProduct
     // ------------------------------------------------------------------
 
-    static void threadQueryProduct(final String sku, final long context)
+    void threadQueryProduct(final String sku, final long context)
     {
         ArrayList skuList = new ArrayList();
         skuList.add(sku);
@@ -537,7 +539,7 @@ public class googlepayment implements payment.BillingAgent
         }
     }
 
-    public static boolean doQueryProduct(final String sku, final long context)
+    public boolean doQueryProduct(final String sku, final long context)
     {
         if (!mReady) {
             _log("doQueryProduct: no ready");
@@ -563,7 +565,7 @@ public class googlepayment implements payment.BillingAgent
     // Returns whether the service is ready.  If not (and context is
     // non-zero), then a callback is scheduled for when it becomes
     // ready.
-    public static boolean doCheckReady()
+    public boolean doCheckReady()
     {
         _log("doCheckReady: (ready is " + Boolean.toString(mReady) + ")");
 
@@ -585,7 +587,7 @@ public class googlepayment implements payment.BillingAgent
     // TODO: Make this async?
 
     // Consume a sku
-    public static boolean doConsume(final String token)
+    public boolean doConsume(final String token)
     {
         if (!mReady) {
             _error("doConsume: !! not ready.  leaving.");

@@ -3,26 +3,10 @@
 
 package com.turbulenz.turbulenz;
 
-// import java.util.ArrayList;
-
-// import org.json.JSONException;
-// import org.json.JSONObject;
-
 import android.util.Log;
 import android.app.Activity;
-// import android.app.PendingIntent;
-// import android.os.Handler;
-// import android.os.Bundle;
-// import android.os.IBinder;
-// import android.os.RemoteException;
-// import android.text.TextUtils;
-// import android.content.Context;
-// import android.content.ComponentName;
-// import android.content.ServiceConnection;
-// import android.content.Intent;
-// import android.content.IntentSender.SendIntentException;
-
-// import com.android.vending.billing.IInAppBillingService;
+import android.os.Handler;
+import android.content.Intent;
 
 public class payment
 {
@@ -55,11 +39,6 @@ public class payment
     {
         abstract public void shutdown();
 
-        /// Return true if everything is ready for purchases.  If (and
-        /// only if) everything is not ready, call reportReady() later
-        /// with the given context.
-        public boolean doCheckReady();
-
         /// requestCode has already been checked.  If we have anything
         /// to do, do it and return true.
         abstract public boolean handleActivityResult(int requestCode,
@@ -87,22 +66,36 @@ public class payment
         /// Consume the purchase corresponding to the agent-token.
         abstract public boolean doConsume(final String token);
 
-        long mReadyContext = 0;
-        public boolean checkReady(long context)
+        boolean    mIsReady = false;
+        long       mReadyContext = 0;
+
+        public boolean isReady()
+        {
+            return mIsReady;
+        }
+
+        public void onReadyStateChange(long context)
         {
             if (0 != context) {
                 if (0 != mReadyContext) {
-                    _error("checkReady: onreadystatus already enabled with " +
-                           "context: " + mReadyContext + ". Replacing with " +
-                           context);
+                    _error("onReadyStateChange: onreadystatus already enabled "
+                           + "with context: " + mReadyContext + ". Replacing "
+                           + "with " + context);
                 }
                 mReadyContext = context;
-                return doCheckReady();
+
+                // If the system is already up, send an immediate
+                // signal.
+
+                if (mIsReady) {
+                    reportReady(mIsReady);
+                }
+
+                return;
             }
 
             _log("doCheckReady: disabling onReady callbacks");
             mReadyContext = 0;
-            return false;
         }
 
         // ------------------------------------------------------------
@@ -128,9 +121,10 @@ public class payment
         void reportReady(final boolean ready)
         {
             _log("reportReady: ready report: " + Boolean.toString(ready));
+            mIsReady = ready;
 
             if (0 == mReadyContext) {
-                _log("reportReady: ignoring");
+                _log("reportReady: no callback context");
                 return;
             }
 
@@ -213,7 +207,7 @@ public class payment
 
         void sendProductInfoError(final long context, final String sku)
         {
-            sendProductInfo(handler, context, sku, null, null, null);
+            sendProductInfo(context, sku, null, null, null);
         }
 
         void sendProductInfo(final long context, final String sku,
@@ -373,21 +367,21 @@ public class payment
         return initialized;
     }
 
-    // Returns whether the service is ready.  If not (and context is
-    // non-zero), then a callback is scheduled for when it becomes
-    // ready.
+    // Returns whether the service is ready.  If context is non-zero,
+    // then native callbacks will be made whenever the ready status
+    // changes.
     public static boolean doCheckReady(long context)
     {
         _log("doCheckReady: ctx: " + context);
 
-        if (null != mBillingAgent) {
-            final boolean ready = mBillingAgent.doCheckReady(context);
-            _log("doCheckReady: agent returned: " + Boolean.toString(ready));
+        if (null != sBillingAgent) {
+
+            final boolean ready = sBillingAgent.isReady();
+            sBillingAgent.onReadyStateChange(context);
+            _log("doCheckReady: agent ready: " + Boolean.toString(ready));
+
             return ready;
         }
-
-        // TODO: this is ambiguous.  The caller can't tell that no
-        // callback will ever be made.
 
         return false;
     }
@@ -401,10 +395,10 @@ public class payment
     {
         _log("doConsume: token: " + token);
 
-        if (null != mBillingAgent) {
-            final boolean result = mBillingAgent.doConsume(token);
+        if (null != sBillingAgent) {
+            final boolean result = sBillingAgent.doConsume(token);
             _log("doConsume: agent returned: " + Boolean.toString(result));
-            returned result;
+            return result;
         }
 
         return false;
