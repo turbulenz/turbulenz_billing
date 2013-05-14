@@ -11,7 +11,6 @@ import org.json.JSONObject;
 import android.util.Log;
 import android.app.Activity;
 import android.app.PendingIntent;
-import android.os.Handler;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.RemoteException;
@@ -97,7 +96,7 @@ public class googlepayment extends payment.BillingAgent
                 _log("service disconnected :(");
                 mService = null;
                 mReady = false;
-                reportReady(mReady);
+                reportReady(false);
             }
 
             @Override
@@ -358,9 +357,6 @@ public class googlepayment extends payment.BillingAgent
             return false;
         }
 
-        // Create a handler here so we can make callbacks on the
-        // calling thread.
-
         mPurchaseContext = context;
         mActivity.runOnUiThread(new Runnable() {
                 @Override public void run() {
@@ -556,28 +552,6 @@ public class googlepayment extends payment.BillingAgent
 
         _log("doQueryProduct: launched thread");
         return true;
-    }
-
-    // ------------------------------------------------------------------
-    // doCheckInitialized
-    // ------------------------------------------------------------------
-
-    // Returns whether the service is ready.  If not (and context is
-    // non-zero), then a callback is scheduled for when it becomes
-    // ready.
-    public boolean doCheckReady()
-    {
-        _log("doCheckReady: (ready is " + Boolean.toString(mReady) + ")");
-
-        // If mReady is already true, report immediately
-
-        if (mReady) {
-            _log("doCheckReady: already ready ... calling immediately");
-            reportReady(true);
-            return true;
-        }
-
-        return false;
     }
 
     // ------------------------------------------------------------------

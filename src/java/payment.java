@@ -35,7 +35,7 @@ public class payment
     //
     //
     //
-    static abstract class BillingAgent
+    static public abstract class BillingAgent
     {
         abstract public void shutdown();
 
@@ -94,8 +94,12 @@ public class payment
                 return;
             }
 
-            _log("doCheckReady: disabling onReady callbacks");
+            _log("onReadyStateChange: disabling onReady callbacks");
             mReadyContext = 0;
+        }
+
+        public void onStart()
+        {
         }
 
         // ------------------------------------------------------------
@@ -118,7 +122,7 @@ public class payment
             return sCallbackHandler;
         }
 
-        void reportReady(final boolean ready)
+        protected void reportReady(final boolean ready)
         {
             _log("reportReady: ready report: " + Boolean.toString(ready));
             mIsReady = ready;
@@ -136,7 +140,7 @@ public class payment
             });
         }
 
-        void sendPurchaseFailure(final long ctx, final String msg)
+        protected void sendPurchaseFailure(final long ctx, final String msg)
         {
             getCallbackHandler().post(new Runnable() {
                 @Override public void run() {
@@ -148,10 +152,11 @@ public class payment
             });
         }
 
-        void sendPurchaseResult(final long ctx,
-                                final String sku, final String data,
-                                final String token, final String devPayload,
-                                final String signature)
+        protected void sendPurchaseResult(final long ctx,
+                                          final String sku, final String data,
+                                          final String token,
+                                          final String devPayload,
+                                          final String signature)
         {
             getCallbackHandler().post(new Runnable() {
                 @Override public void run() {
@@ -172,10 +177,11 @@ public class payment
             });
         }
 
-        void sendPurchaseInfo(final long context,
-                              final String sku, final String data,
-                              final String token, final String devPayload,
-                              final String sig)
+        protected void sendPurchaseInfo(final long context,
+                                        final String sku, final String data,
+                                        final String token,
+                                        final String devPayload,
+                                        final String sig)
         {
             getCallbackHandler().post(new Runnable() {
                 @Override public void run() {
@@ -185,7 +191,7 @@ public class payment
             });
         }
 
-        void sendPurchaseInfoTerminator(final long context)
+        protected void sendPurchaseInfoTerminator(final long context)
         {
             getCallbackHandler().post(new Runnable() {
                 @Override public void run() {
@@ -195,7 +201,8 @@ public class payment
             });
         }
 
-        void sendPurchaseInfoError(final long context, final String msg)
+        protected void sendPurchaseInfoError(final long context,
+                                             final String msg)
         {
             getCallbackHandler().post(new Runnable() {
                 @Override public void run() {
@@ -205,14 +212,16 @@ public class payment
             });
         }
 
-        void sendProductInfoError(final long context, final String sku)
+        protected void sendProductInfoError(final long context,
+                                            final String sku)
         {
             sendProductInfo(context, sku, null, null, null);
         }
 
-        void sendProductInfo(final long context, final String sku,
-                             final String title, final String description,
-                             final String price)
+        protected void sendProductInfo(final long context, final String sku,
+                                       final String title,
+                                       final String description,
+                                       final String price)
         {
             getCallbackHandler().post(new Runnable() {
                 @Override public void run() {
@@ -268,6 +277,19 @@ public class payment
         sCallbackHandler = null;
         sActivity = null;
         _log("done shutting down.");
+    }
+
+    // ------------------------------------------------------------------
+    // onStart
+    // ------------------------------------------------------------------
+
+    public static void onStart()
+    {
+        if (null != sBillingAgent) {
+            sBillingAgent.onStart();
+        } else {
+            _error("onStart: !! no billing agent");
+        }
     }
 
     // ------------------------------------------------------------------
