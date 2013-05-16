@@ -248,7 +248,9 @@ public class payment
 
         // TODO: Detect the best billing agent to use
 
-        sBillingAgent = new googlepayment(sActivity, sPurchaseRequestCode);
+        if (null == sBillingAgent) {
+            sBillingAgent = new googlepayment(sActivity, sPurchaseRequestCode);
+        }
 
         return (null != sBillingAgent);
     }
@@ -258,6 +260,14 @@ public class payment
     {
         sCallbackHandler = handler;
         boolean ret = initialize(activity, purchaseRequestCode);
+        return ret;
+    }
+
+    public static boolean initialize(Activity activity, int purchaseRequestCode,
+                                     CallbackHandler handler, BillingAgent agent)
+    {
+        sBillingAgent = agent;
+        boolean ret = initialize(activity, purchaseRequestCode, handler);
         return ret;
     }
 
