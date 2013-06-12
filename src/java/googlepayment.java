@@ -225,6 +225,32 @@ public class googlepayment extends payment.BillingAgent
     // doPurchase
     // ------------------------------------------------------------------
 
+    void resetPurchaseContext()
+    {
+        // Reset our purchase context
+
+        mPurchaseContext = 0;
+    }
+
+    @Override
+    protected void sendPurchaseFailure(final long ctx, final String msg)
+    {
+        _log("googlepayment.sendPurchaseFailure: " + msg);
+        super.sendPurchaseFailure(ctx, msg);
+        resetPurchaseContext();
+    }
+
+    @Override
+    protected void sendPurchaseResult(final long ctx,
+                                      final String sku, final String data,
+                                      final String token,
+                                      final String devPayload,
+                                      final String signature)
+    {
+        super.sendPurchaseResult(ctx, sku, data, token, devPayload, signature);
+        resetPurchaseContext();
+    }
+
     //
     protected boolean verifyPurchase(String data, String sig)
     {
@@ -249,14 +275,12 @@ public class googlepayment extends payment.BillingAgent
         if (Activity.RESULT_CANCELED == resultCode)  {
             _log("handleActivityResult: cancelled");
             sendPurchaseFailure(mPurchaseContext, null);
-            mPurchaseContext = 0;
             return true;
         }
 
         if (Activity.RESULT_OK != resultCode) {
             _log("onActivityResult: unknown result code");
             sendPurchaseFailure(mPurchaseContext, "Unknown GooglePlay failure");
-            mPurchaseContext = 0;
             return true;
         }
 
@@ -266,7 +290,6 @@ public class googlepayment extends payment.BillingAgent
         if (BILLING_RESPONSE_RESULT_OK != purchaseResponse) {
             _log("onActivityResult: bad purchaseResponse: " + purchaseResponse);
             sendPurchaseFailure(mPurchaseContext, "Purchase did not complete");
-            mPurchaseContext = 0;
             return true;
         }
 
@@ -282,14 +305,12 @@ public class googlepayment extends payment.BillingAgent
         if (null == purchaseData || null == purchaseSig) {
             _log("onActivityResult: bad purchase data");
             sendPurchaseFailure(mPurchaseContext, "bad purchase data");
-            mPurchaseContext = 0;
             return true;
         }
 
         if (!verifyPurchase(purchaseData, purchaseSig)) {
             _log("onActivityResult: invalid signature");
             sendPurchaseFailure(mPurchaseContext, "invalid signature");
-            mPurchaseContext = 0;
             return true;
         }
 
@@ -306,20 +327,17 @@ public class googlepayment extends payment.BillingAgent
         } catch(JSONException e) {
             sendPurchaseFailure(mPurchaseContext,
                                 "no sku data in GooglePlaye response");
-            mPurchaseContext = 0;
             return true;
         }
 
         if (TextUtils.isEmpty(sku)) {
             sendPurchaseFailure(mPurchaseContext, "sku name was empty");
-            mPurchaseContext = 0;
             return true;
         }
 
         _log("onActivityResult: purchase succeeded");
         sendPurchaseResult(mPurchaseContext, sku, purchaseData, googleToken,
                            devPayload, purchaseSig);
-        mPurchaseContext = 0;
         return true;
     }
 
