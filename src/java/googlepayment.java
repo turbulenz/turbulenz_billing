@@ -51,6 +51,31 @@ public class googlepayment extends payment.BillingAgent
     public static final int BILLING_RESPONSE_RESULT_ITEM_ALREADY_OWNED = 7;
     public static final int BILLING_RESPONSE_RESULT_ITEM_NOT_OWNED = 8;
 
+    String billingResponseString(final int response)
+    {
+        switch(response) {
+        case BILLING_RESPONSE_RESULT_OK:
+            return "OK";
+        case BILLING_RESPONSE_RESULT_USER_CANCELED:
+            return "cancelled by user";
+        case BILLING_RESPONSE_RESULT_BILLING_UNAVAILABLE:
+            return "billing unavailable";
+        case BILLING_RESPONSE_RESULT_ITEM_UNAVAILABLE:
+            return "item is not available";
+        case BILLING_RESPONSE_RESULT_DEVELOPER_ERROR:
+            return "error in billing request";
+        case BILLING_RESPONSE_RESULT_ERROR:
+            return "error from google billing";
+        case BILLING_RESPONSE_RESULT_ITEM_ALREADY_OWNED:
+            return "item already owned";
+        case BILLING_RESPONSE_RESULT_ITEM_NOT_OWNED:
+            return "item not owned";
+        default:
+            break;
+        }
+        return "unknown error";
+    }
+
     // Keys for the responses from InAppBillingService
     public static final String RESPONSE_CODE = "RESPONSE_CODE";
     public static final String RESPONSE_GET_SKU_DETAILS_LIST = "DETAILS_LIST";
@@ -311,8 +336,10 @@ public class googlepayment extends payment.BillingAgent
             if (response != BILLING_RESPONSE_RESULT_OK) {
                 _log("uiThreadDoPurchase: Failed to create intent bundle, " +
                      "response: " + response);
+
+                final String billingResponse = billingResponseString(response);
                 sendPurchaseFailure(mPurchaseContext,
-                                    "failed to create Android buy Intent");
+                                    "purchase error: " + billingResponse);
                 return;
             }
 
