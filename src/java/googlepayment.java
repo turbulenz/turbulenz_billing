@@ -25,20 +25,6 @@ import com.android.vending.billing.IInAppBillingService;
 
 public class googlepayment extends payment.BillingAgent
 {
-    // Logging
-    static private void _log(String msg)
-    {
-        Log.i("tzbilling(google)", msg);
-    }
-    static private void _print(String msg)
-    {
-        Log.i("tzbilling(google)", msg);
-    }
-    static private void _error(String msg)
-    {
-        Log.e("tzbilling(google)", msg);
-    }
-
     // ------------------------------------------------------------------
     //
     // Billing response codes

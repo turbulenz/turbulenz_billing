@@ -11,17 +11,24 @@ import android.content.Intent;
 public class payment
 {
     // Logging
-    static private void _log(String msg)
+    static private boolean s_logging = false;
+    static private void _log(final String msg)
+    {
+        if (s_logging) {
+            Log.i("tzbilling: ", msg);
+        }
+    }
+    static private void _print(final String msg)
     {
         Log.i("tzbilling: ", msg);
     }
-    static private void _print(String msg)
-    {
-        Log.i("tzbilling: ", msg);
-    }
-    static private void _error(String msg)
+    static private void _error(final String msg)
     {
         Log.e("tzbilling: ", msg);
+    }
+    static public void enableLogging(final boolean enable)
+    {
+        s_logging = enable;
     }
 
     //
@@ -37,6 +44,10 @@ public class payment
     //
     static public abstract class BillingAgent
     {
+        static void _log(final String msg)   { payment._log(msg);   }
+        static void _print(final String msg) { payment._print(msg); }
+        static void _error(final String msg) { payment._error(msg); }
+
         abstract public void shutdown();
 
         /// requestCode has already been checked.  If we have anything
@@ -144,7 +155,7 @@ public class payment
         {
             getCallbackHandler().post(new Runnable() {
                 @Override public void run() {
-                    _log("sendPurchaseFailure (runnable): context: " + ctx +
+                    _error("sendPurchaseFailure (runnable): context: " + ctx +
                          ", msg: " + msg);
                     nativeOnPurchaseFailed(ctx, msg);
                     _log("sendPurchaseFailure (runnable): back from native");
@@ -286,7 +297,7 @@ public class payment
 
         sCallbackHandler = null;
         sActivity = null;
-        _log("done shutting down.");
+        _print("shut down complete");
     }
 
     // ------------------------------------------------------------------
@@ -433,6 +444,7 @@ public class payment
             return result;
         }
 
+        _error("doConsume: no billing agent");
         return false;
     }
 
