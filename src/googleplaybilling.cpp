@@ -446,6 +446,17 @@ GooglePlayBilling::SetReadyStatusCallback(void *ctx, ReadyStatusCB callback)
 {
     LOGI("setting onreadystatus callback: %p, %p", ctx, callback);
 
+    if (0 == mJNIEnv)
+    {
+        LOGE("call to SetReadyStatusCallback before initialization");
+        return false;
+    }
+    if (0 == mDoCheckReadyMethod)
+    {
+        LOGE("call to SetReadyStatusCallback before Java methods bound");
+        return false;
+    }
+
     mReadyStatusContext = ctx;
     mReadyStatusCallback = callback;
 
